@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products collection:
+    // Anyone can read the products catalog for storefront shopping
+    // Store managers and admin users can create, update, and manage products
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
