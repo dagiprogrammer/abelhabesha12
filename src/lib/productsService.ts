@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { Product } from '../types';
-import { PRODUCTS } from '../data/products';
+import { PRODUCTS, DEFAULT_PRODUCT_IMAGE } from '../data/products';
 
 export const PRODUCTS_COLLECTION = 'products';
 
@@ -103,13 +103,13 @@ export function subscribeToProducts(
       if (prods.length > 0) {
         onUpdate(prods);
       } else {
-        // Use default seed products if database is unpopulated
-        onUpdate(PRODUCTS);
+        // No products in database yet (empty catalog awaiting manager uploads)
+        onUpdate([]);
       }
     },
     (error) => {
-      console.warn('Firestore subscription notice (using local seed fallback):', error);
-      onUpdate(PRODUCTS);
+      console.warn('Firestore subscription notice (empty catalog fallback):', error);
+      onUpdate([]);
       if (onError) {
         try {
           handleFirestoreError(error, OperationType.LIST, PRODUCTS_COLLECTION);
@@ -143,7 +143,7 @@ function sanitizeProduct(product: Partial<Product>): Product {
     fabricTi: product.fabricTi?.trim() || undefined,
     priceETB: Math.max(0, Number(product.priceETB) || 0),
     originalPriceETB: product.originalPriceETB ? Math.max(0, Number(product.originalPriceETB)) : undefined,
-    image: product.image?.trim() || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop',
+    image: product.image?.trim() || DEFAULT_PRODUCT_IMAGE,
     secondaryImages: Array.isArray(product.secondaryImages) ? product.secondaryImages.filter(Boolean) : undefined,
     descriptionAm: product.descriptionAm?.trim() || 'በሺሮሜዳ በባለሙያዎች የተሸመነ እውነተኛ ባህላዊ አልባሳት።',
     descriptionEn: product.descriptionEn?.trim() || 'Authentic handcrafted Ethiopian attire woven by master artisans in Shiromeda.',

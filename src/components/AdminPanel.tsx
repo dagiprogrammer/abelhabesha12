@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -9,7 +9,6 @@ import {
   Check, 
   Clock, 
   AlertCircle,
-  Database,
   ArrowLeft,
   Search,
   Tag,
@@ -18,14 +17,15 @@ import {
   Layers,
   Image as ImageIcon,
   CheckCircle2,
-  RefreshCw
+  Upload,
+  RotateCcw
 } from 'lucide-react';
 import { Product, Language, CategoryGroupId } from '../types';
-import { IMAGE_PRESETS, PRODUCTS } from '../data/products';
+import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { 
   saveProductToFirestore, 
   deleteProductFromFirestore,
-  seedProductsToFirestore 
+  clearAllProductsFromFirestore 
 } from '../lib/productsService';
 import { getTranslation } from '../data/translations';
 
@@ -57,6 +57,7 @@ interface AttireTemplate {
   data: Partial<Product>;
 }
 
+// Fast text metadata templates (no artificial test images)
 const ATTIRE_TEMPLATES: AttireTemplate[] = [
   {
     labelAm: 'የሰርግ ሀበሻ ቀሚስ',
@@ -72,7 +73,6 @@ const ATTIRE_TEMPLATES: AttireTemplate[] = [
       fabricTi: '100% ጽሩይ ናይ ኣኽሱም ፈተል ምስ ወርቂ ጥልፊ',
       priceETB: 28000,
       originalPriceETB: 32000,
-      image: IMAGE_PRESETS[0].image,
       descriptionAm: 'በሺሮሜዳ የሽመና ጠበብቶች የተፈተለና የተሸመነ፣ በወርቅ ጥልፍ ያሸበረቀ የሰርግ እና የመልስ ልዩ የክብር ቀሚስ ከመDouble-Netela ጋር።',
       descriptionEn: 'Masterfully woven on traditional wooden looms in Shiromeda with exquisite gold filigree needlework and matching double-fringe Netela.',
       descriptionTi: 'ኣብ ሽሮሜዳ ብክኢላታት ዝተፈተለን ዝተሸለመን፣ ብወርቂ ጥልፊ ዝተሰለመ ናይ መርዓ ኽዳውንቲ።',
@@ -97,7 +97,6 @@ const ATTIRE_TEMPLATES: AttireTemplate[] = [
       fabricTi: 'ጽሩይ ናይ ሸዋ ጡጥ ምስ ኤመራልድን ወርቅን ጥልፊ',
       priceETB: 23500,
       originalPriceETB: 26000,
-      image: IMAGE_PRESETS[1].image,
       descriptionAm: 'ለመልስ እና ለልዩ ክብረ-በዓላት የሚሆን የንጉሳዊ ቤተሰብ አይነት የዙሪያ ቀሚስ ከባለ ሁለት ድርብ ነጠላ ጋር።',
       descriptionEn: 'Regal Meles gown tailored with vibrant emerald and golden threads, offering supreme drape and timeless poise.',
       descriptionTi: 'ንመልሲን ንክብረ-በዓላትን ዝኸውን ናይ ንጉሳዊ ስድራ ዝመስል ዙርያ ቀሚሽ።',
@@ -122,7 +121,6 @@ const ATTIRE_TEMPLATES: AttireTemplate[] = [
       fabricTi: 'ተመሳሳሊ ጽሩይ ጡጥ ምስ ጸሊምን ወርቅን ጥበብ',
       priceETB: 36000,
       originalPriceETB: 42000,
-      image: IMAGE_PRESETS[2].image,
       descriptionAm: 'ለሙሽሮች እና ለጥንዶች የተዘጋጀ ሙሉ ተዛማጅ የሀበሻ ልብስ ስብስብ። የሴት ቀሚስ ከነጠላ እና የወንድ ሸሚዝ ከኩታ ጋር።',
       descriptionEn: 'Complementary his-and-hers bridal set featuring harmonious geometric embroidery motifs on lightweight virgin cotton.',
       descriptionTi: 'ንመመረቕትን ንመርዓውያንን ዝተዳለወ ተመሳሳሊ ናይ ሓበሻ ክዳውንቲ።',
@@ -147,7 +145,6 @@ const ATTIRE_TEMPLATES: AttireTemplate[] = [
       fabricTi: '100% ናይ ኢድ ፈተል ምስ ወርቂ ጥበብ ኩታ',
       priceETB: 14500,
       originalPriceETB: 16500,
-      image: IMAGE_PRESETS[3].image,
       descriptionAm: 'ለሰርግ፣ ለመልስ እና ለበዓላት የሚሆን የወንዶች ዘመናዊ ቆራጭ ሸሚዝ ከባህላዊ የክብር ኩታ ጋር።',
       descriptionEn: 'Crisp contemporary Habesha cut men shirt accompanied by a substantial ceremonial woven Kuta with gold tibeb hem.',
       descriptionTi: 'ንመርዓን ንበዓላትን ዝኸውን ናይ ሰብኡት ዘመናዊ ሸሚዝ ምስ ባህላዊ ኩታ።',
@@ -172,7 +169,6 @@ const ATTIRE_TEMPLATES: AttireTemplate[] = [
       fabricTi: 'ፕሪሚየም ናይ ፈረንሳይ ሺፎን ምስ ናይ ሓበሻ ጥልፊ',
       priceETB: 18500,
       originalPriceETB: 21000,
-      image: IMAGE_PRESETS[4].image,
       descriptionAm: 'በጣም ቀለል ያለ፣ ለመንቀሳቀስ ምቹ የሆነ ዘመናዊ የሺፎን ቀሚስ ለምርቃት፣ ለልደት እና ለደስታ ቀናት።',
       descriptionEn: 'Featherlight modern chiffon gown engineered for graceful movement, featuring woven neck accents and fine scarf.',
       descriptionTi: 'ቀሊልን ንምንቅስቓስ ምቹእን ዝኾነ ናይ ሺፎን ቀሚሽ ንምረቓን በዓላትን።',
@@ -196,14 +192,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [customTagInput, setCustomTagInput] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Table search & filters
   const [searchFilter, setSearchFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState<CategoryGroupId>('all');
 
-  // Confirmation modals (replaces raw window.confirm for iframe safety)
+  // Confirmation modals
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [showSeedConfirm, setShowSeedConfirm] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const t = getTranslation(language);
 
@@ -224,7 +221,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       fabricTi: '100% ጽሩይ ናይ ኣኽሱም ፈተል',
       priceETB: 24000,
       originalPriceETB: 27500,
-      image: IMAGE_PRESETS[0].image,
+      image: '',
       descriptionAm: 'በሺሮሜዳ በባለሙያዎች የተሸመነ እውነተኛ ባህላዊ አልባሳት።',
       descriptionEn: 'Handcrafted in Shiromeda with intricate embroidery and matching netela.',
       descriptionTi: 'ኣብ ሽሮሜዳ ብክኢላታት ዝተፈተለን ዝተሰፈየን ባህላዊ ክዳን።',
@@ -242,7 +239,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       ...prev,
       ...tpl.data,
       id: prev?.id || `prod-${Date.now()}`,
-      code: prev?.code || `AH-${Math.floor(1000 + Math.random() * 9000)}`
+      code: prev?.code || `AH-${Math.floor(1000 + Math.random() * 9000)}`,
+      // Retain existing image if user already uploaded or provided one
+      image: prev?.image || ''
     }));
   };
 
@@ -283,6 +282,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       });
     }
     setCustomTagInput('');
+  };
+
+  // Upload photo from device/camera with canvas optimization
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      setStatusMessage({
+        type: 'error',
+        text: 'Image file is too large. Please upload an image smaller than 8MB.'
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize to high-quality max 1000px so it fits into Firestore document safely
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 1000;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setEditingProduct((prev) => prev ? { ...prev, image: dataUrl } : null);
+          setStatusMessage({
+            type: 'success',
+            text: `✓ Real photo loaded (${width}x${height}px). Ready to save!`
+          });
+          setTimeout(() => setStatusMessage(null), 3000);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -352,22 +405,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const confirmSeedCatalog = async () => {
-    setShowSeedConfirm(false);
+  const confirmClearAll = async () => {
+    setShowClearConfirm(false);
     setSaving(true);
     setStatusMessage(null);
     try {
-      const count = await seedProductsToFirestore(PRODUCTS);
+      await clearAllProductsFromFirestore();
       setStatusMessage({
         type: 'success',
-        text: `✓ Successfully synced all ${count} authentic Shiromeda products to Firestore!`
+        text: '✓ All test products removed from Firebase Firestore. Your store catalog is clean!'
       });
       setTimeout(() => setStatusMessage(null), 5000);
+      setEditingProduct(null);
     } catch (err: any) {
-      console.error('Seed catalog error:', err);
+      console.error('Clear products error:', err);
       setStatusMessage({
         type: 'error',
-        text: `Error syncing catalog: ${err.message || String(err)}`
+        text: `Error clearing products: ${err.message || String(err)}`
       });
     } finally {
       setSaving(false);
@@ -378,39 +432,75 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const filteredProducts = products.filter((p) => {
     const matchesGroup = groupFilter === 'all' || p.categoryGroup === groupFilter;
     const query = searchFilter.toLowerCase().trim();
-    const matchesSearch = !query || 
-      p.code.toLowerCase().includes(query) ||
-      p.nameAm.toLowerCase().includes(query) ||
-      p.nameEn.toLowerCase().includes(query) ||
-      (p.nameTi && p.nameTi.toLowerCase().includes(query)) ||
-      p.hashtags.some(tag => tag.toLowerCase().includes(query));
+    if (!query) return matchesGroup;
+
+    const matchesSearch = 
+      p.code?.toLowerCase().includes(query) ||
+      p.nameAm?.toLowerCase().includes(query) ||
+      p.nameEn?.toLowerCase().includes(query) ||
+      p.hashtags?.some((h) => h.toLowerCase().includes(query));
+
     return matchesGroup && matchesSearch;
   });
 
   return (
-    <div className="bg-[#FDFCF8] min-h-screen py-6 sm:py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-[#EAD8C0]">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <button
-                onClick={onClose}
-                className="inline-flex items-center gap-1.5 text-xs text-[#8B0000] font-bold hover:underline cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Storefront (መደብር)</span>
-              </button>
-              
-              <span className="text-stone-300">|</span>
-              
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#2E4739] bg-[#2E4739]/10 px-2.5 py-0.5 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                <span>Firestore Live Sync Active</span>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#FDFCF8] text-[#2D241E] pb-24">
+      
+      {/* Top Header */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#EAD8C0] px-4 sm:px-8 py-4 shadow-2xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="p-2 -ml-2 rounded-xl text-stone-500 hover:text-[#8B0000] hover:bg-[#F9F4EC] transition-colors cursor-pointer"
+              title="Return to Storefront"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
 
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
+                <span className="font-serif font-bold text-lg text-[#2D241E] tracking-tight">
+                  Abel Habesha Admin
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md bg-[#8B0000]/10 text-[#8B0000]">
+                  Live Store Manager
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500">
+                Firestore Realtime Database Sync
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-3.5 py-1.5 rounded-xl border border-[#EAD8C0] hover:border-[#8B0000] text-xs font-bold text-[#2D241E] hover:text-[#8B0000] transition-colors cursor-pointer"
+            >
+              View Storefront
+            </button>
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="p-2 text-stone-400 hover:text-[#8B0000] rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+                title="Log Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-8">
+        
+        {/* Top Control Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-[#EAD8C0]">
+          <div>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#2D241E] flex items-center gap-2">
               <span>{t.adminPanelTitle}</span>
               <span className="text-xs px-2.5 py-0.5 rounded-md bg-[#8B0000] text-white font-mono font-normal">
@@ -418,20 +508,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </span>
             </h1>
             <p className="text-xs text-[#2D241E]/70 mt-0.5">
-              {t.adminPanelSubtitle}
+              Manage your real Habesha attires, upload authentic photographs, and set prices.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setShowSeedConfirm(true)}
-              disabled={saving}
-              className="px-3.5 py-2 bg-white hover:bg-[#F9F4EC] text-[#2D241E] border border-[#EAD8C0] rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
-              title="Populate or restore full Shiromeda catalog"
-            >
-              <Database className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span>Sync All Seed Products</span>
-            </button>
+            {products.length > 0 && (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                disabled={saving}
+                className="px-3.5 py-2 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+                title="Wipe test products from database"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Wipe Test Products</span>
+              </button>
+            )}
 
             <button
               onClick={handleStartNew}
@@ -441,16 +533,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <Plus className="w-4 h-4" />
               <span>{t.addProductBtn}</span>
             </button>
-
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                className="p-2 text-stone-500 hover:text-[#8B0000] hover:bg-stone-100 rounded-xl transition-colors cursor-pointer"
-                title="Log Out of Admin"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
           </div>
         </div>
 
@@ -469,31 +551,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <div className="flex-1">{statusMessage.text}</div>
             <button 
               onClick={() => setStatusMessage(null)}
-              className="text-stone-400 hover:text-stone-700 p-1"
+              className="text-stone-400 hover:text-stone-700 text-base leading-none cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              ✕
             </button>
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* ADD / EDIT PRODUCT DRAWER / FORM */}
-        {/* ============================================================ */}
+        {/* Product Editor Form Modal/Drawer */}
         {editingProduct && (
-          <div className="mb-10 bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#8B0000]/40 shadow-xl transition-all">
-            
-            {/* Form Top Title */}
+          <div className="mb-10 bg-white rounded-3xl p-6 sm:p-8 border border-[#EAD8C0] shadow-xl relative animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#EAD8C0]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#8B0000]/10 flex items-center justify-center text-[#8B0000]">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-[#8B0000]/10 text-[#8B0000]">
                   {isNew ? <Plus className="w-5 h-5" /> : <Edit3 className="w-5 h-5" />}
-                </div>
+                </span>
                 <div>
-                  <h3 className="font-serif font-bold text-lg sm:text-xl text-[#2D241E]">
-                    {isNew ? 'Add Real Habesha Attire to Catalog' : `Edit Attire: ${editingProduct.code}`}
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Product is written directly into Firebase Firestore and updates the live store immediately.
+                  <h2 className="text-lg sm:text-xl font-serif font-bold text-[#2D241E]">
+                    {isNew ? 'Upload New Habesha Attire' : `Edit Attire: ${editingProduct.nameEn || editingProduct.code}`}
+                  </h2>
+                  <p className="text-[11px] text-stone-500">
+                    {isNew ? 'Enter details and upload real photos from your phone or workshop.' : 'Updates will reflect live across the store immediately.'}
                   </p>
                 </div>
               </div>
@@ -506,11 +584,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </button>
             </div>
 
-            {/* Quick Template Presets for Fast Real Product Creation */}
+            {/* Quick Template Presets for Fast Metadata Entry */}
             <div className="mb-6 p-4 bg-[#F9F4EC]/60 rounded-2xl border border-[#EAD8C0]">
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#2D241E] mb-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
-                <span>Quick-Fill from Habesha Attire Templates (ፈጣን ሞዴል ይምረጡ):</span>
+                <span>Autofill Descriptions & Details (ፈጣን ሞዴል መሙያ):</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {ATTIRE_TEMPLATES.map((tpl, idx) => (
@@ -621,65 +699,90 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* Attire Images: Preset Selector + Custom URL */}
-              <div className="p-4 bg-[#F9F4EC]/40 rounded-2xl border border-[#EAD8C0]">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-[#2D241E] flex items-center gap-1.5">
+              {/* REAL PRODUCT IMAGE UPLOAD SECTION */}
+              <div className="p-5 bg-[#F9F4EC]/60 rounded-2xl border border-[#EAD8C0] space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#2D241E] flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-[#8B0000]" />
-                    <span>Product Image: Select Preset or Paste High-Res Image URL</span>
+                    <span>Real Product Photography (እውነተኛ የምርት ፎቶ)</span>
                   </label>
-                  <span className="text-[11px] text-stone-500">Shiromeda Catalog Presets</span>
+                  <span className="text-[11px] text-[#8B0000] font-semibold">
+                    Upload from camera or device
+                  </span>
                 </div>
 
-                {/* Visual Preset Thumbnails */}
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-11 gap-2 mb-3">
-                  {IMAGE_PRESETS.map((pst) => (
-                    <button
-                      key={pst.id}
-                      type="button"
-                      onClick={() => setEditingProduct({ ...editingProduct, image: pst.image })}
-                      className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                        editingProduct.image === pst.image 
-                          ? 'border-[#8B0000] ring-2 ring-[#8B0000]/40 scale-105 shadow-md z-10' 
-                          : 'border-[#EAD8C0] opacity-75 hover:opacity-100 hover:border-stone-400'
-                      }`}
-                      title={pst.nameEn}
-                    >
-                      <img src={pst.image} alt={pst.nameEn} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                      <span className="absolute bottom-0 inset-x-0 bg-black/75 text-white text-[8px] truncate px-1 py-0.5 text-center">
-                        {pst.nameAm}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom URL Input & Instant Preview */}
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="w-full flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                  
+                  {/* Upload Controls */}
+                  <div className="md:col-span-8 space-y-3">
+                    {/* Hidden Native File Input */}
                     <input
-                      type="text"
-                      required
-                      value={editingProduct.image || ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full text-xs p-2.5 rounded-xl border border-[#EAD8C0] bg-white font-mono text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleImageFileUpload}
+                      className="hidden"
                     />
+
+                    {/* Direct Upload Box */}
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-6 rounded-2xl border-2 border-dashed border-[#EAD8C0] hover:border-[#8B0000] bg-white cursor-pointer transition-all text-center group"
+                    >
+                      <div className="w-12 h-12 mx-auto rounded-full bg-[#8B0000]/10 text-[#8B0000] group-hover:bg-[#8B0000] group-hover:text-white transition-colors flex items-center justify-center mb-2">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <p className="text-xs font-bold text-[#2D241E] group-hover:text-[#8B0000] transition-colors">
+                        Click to select photo from Phone / Computer
+                      </p>
+                      <p className="text-[11px] text-stone-500 mt-1">
+                        Supports JPG, PNG, WEBP. Automatically optimized for fast loading.
+                      </p>
+                    </div>
+
+                    {/* Or Paste Direct URL */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-stone-600">
+                        Or enter direct image URL (የፎቶ ሊንክ):
+                      </label>
+                      <input
+                        type="text"
+                        value={editingProduct.image || ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                        placeholder="https://example.com/dress.jpg or data:image/..."
+                        className="w-full text-xs p-2.5 rounded-xl border border-[#EAD8C0] bg-white font-mono text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
+                      />
+                    </div>
                   </div>
 
-                  {editingProduct.image && (
-                    <div className="flex items-center gap-2 shrink-0 bg-white p-1.5 rounded-xl border border-[#EAD8C0]">
+                  {/* Live Photo Preview Card */}
+                  <div className="md:col-span-4 flex flex-col items-center">
+                    <div className="w-full max-w-[200px] aspect-4/5 rounded-2xl overflow-hidden border border-[#EAD8C0] bg-white shadow-md relative">
                       <img
-                        src={editingProduct.image}
+                        src={editingProduct.image || DEFAULT_PRODUCT_IMAGE}
                         alt="Preview"
                         referrerPolicy="no-referrer"
-                        className="w-10 h-10 object-cover rounded-lg border border-stone-200"
+                        className="w-full h-full object-cover object-top"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = IMAGE_PRESETS[0].image;
+                          (e.currentTarget as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
                         }}
                       />
-                      <span className="text-[10px] text-stone-500 font-semibold pr-1">Image Preview</span>
+                      {editingProduct.image && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, image: '' })}
+                          className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
+                          title="Remove Image"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
-                  )}
+                    <span className="text-[11px] text-stone-500 font-semibold mt-2">
+                      {editingProduct.image ? '✓ Custom Photo Ready' : 'Placeholder Preview'}
+                    </span>
+                  </div>
+
                 </div>
               </div>
 
@@ -722,13 +825,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     type="text"
                     value={editingProduct.badge || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, badge: e.target.value })}
-                    placeholder="አዲስ / ተወዳጅ / ልዩ"
+                    placeholder="አዲስ / ተወዳጅ / ሮያል"
                     className="w-full text-xs p-3 rounded-xl border border-[#EAD8C0] bg-[#F9F4EC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
                   />
                 </div>
               </div>
 
-              {/* Fabric Materials Details in 3 Languages */}
+              {/* Fabric Details in 3 Languages */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-[#2D241E] block mb-1">Fabric (አማርኛ)</label>
@@ -818,93 +921,82 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     rows={3}
                     value={editingProduct.descriptionAm || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, descriptionAm: e.target.value })}
-                    placeholder="በሺሮሜዳ በባለሙያዎች የተሸመነ እውነተኛ ባህላዊ አልባሳት..."
-                    className="w-full text-xs p-3 rounded-xl border border-[#EAD8C0] bg-[#F9F4EC] focus:bg-white focus:outline-none"
+                    className="w-full text-xs p-3 rounded-xl border border-[#EAD8C0] bg-[#F9F4EC] focus:bg-white focus:outline-none font-ethiopic"
+                    placeholder="የአልባሳቱ ዝርዝር መግለጫ..."
                   />
                 </div>
-
                 <div>
                   <label className="text-xs font-bold text-[#2D241E] block mb-1">
-                    Description (English Details)
+                    Description (English)
                   </label>
                   <textarea
                     rows={3}
                     value={editingProduct.descriptionEn || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, descriptionEn: e.target.value })}
-                    placeholder="Masterfully woven on traditional wooden looms in Shiromeda..."
                     className="w-full text-xs p-3 rounded-xl border border-[#EAD8C0] bg-[#F9F4EC] focus:bg-white focus:outline-none"
+                    placeholder="Product details, cut, embroidery, and care instructions..."
                   />
                 </div>
               </div>
 
-              {/* Flags / Toggles */}
-              <div className="flex flex-wrap items-center gap-6 pt-2 pb-2 border-t border-b border-[#EAD8C0]/60">
-                <label className="flex items-center gap-2 text-xs font-bold text-[#2D241E] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingProduct.inStock ?? true}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, inStock: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#8B0000] focus:ring-[#8B0000]"
-                  />
-                  <span>In Stock (አሁን ዝግጁ ነው)</span>
-                </label>
-
-                <label className="flex items-center gap-2 text-xs font-bold text-[#2D241E] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingProduct.bestSeller ?? false}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, bestSeller: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#8B0000] focus:ring-[#8B0000]"
-                  />
-                  <span>Bestseller (በብዛት የተወደደ)</span>
-                </label>
-
-                <label className="flex items-center gap-2 text-xs font-bold text-[#2D241E] cursor-pointer">
+              {/* Flags: Featured, Bestseller, In Stock */}
+              <div className="flex flex-wrap items-center gap-6 p-4 rounded-2xl bg-[#F9F4EC] border border-[#EAD8C0]">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#2D241E]">
                   <input
                     type="checkbox"
                     checked={editingProduct.featured ?? true}
                     onChange={(e) => setEditingProduct({ ...editingProduct, featured: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#8B0000] focus:ring-[#8B0000]"
+                    className="w-4 h-4 rounded text-[#8B0000] accent-[#8B0000]"
                   />
-                  <span>Featured on Home Page (በመነሻ ገጽ ላይ አሳይ)</span>
+                  <span>Featured Product (ተመራጭ)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#2D241E]">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct.bestSeller ?? false}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, bestSeller: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#8B0000] accent-[#8B0000]"
+                  />
+                  <span>Bestseller (ምርጥ ሽያጭ)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#2D241E]">
+                  <input
+                    type="checkbox"
+                    checked={editingProduct.inStock ?? true}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, inStock: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#8B0000] accent-[#8B0000]"
+                  />
+                  <span>In Stock (ለማስፋት ዝግጁ)</span>
                 </label>
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-3">
+              {/* Form Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#EAD8C0]">
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
-                  className="px-5 py-2.5 rounded-xl border border-[#EAD8C0] text-xs font-bold text-stone-600 hover:bg-stone-100 cursor-pointer"
+                  disabled={saving}
+                  className="px-5 py-2.5 rounded-xl border border-[#EAD8C0] hover:bg-stone-100 text-xs font-bold text-stone-600 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
-
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-7 py-2.5 bg-[#8B0000] hover:bg-[#A52A2A] text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                  className="px-6 py-2.5 bg-[#8B0000] hover:bg-[#A52A2A] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {saving ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Saving to Firestore...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>{isNew ? 'Publish Real Product' : 'Save Changes'}</span>
-                    </>
-                  )}
+                  <Save className="w-4 h-4" />
+                  <span>{saving ? 'Saving to Database...' : 'Save Habesha Attire'}</span>
                 </button>
               </div>
+
             </form>
           </div>
         )}
 
-        {/* ============================================================ */}
-        {/* CATALOG LIST & MANAGEMENT TABLE */}
-        {/* ============================================================ */}
+        {/* Existing Products List Table */}
         <div className="bg-white rounded-3xl border border-[#EAD8C0] overflow-hidden shadow-xs">
           
           {/* Table Controls / Filter Bar */}
@@ -962,8 +1054,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <tbody className="divide-y divide-[#EAD8C0]">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-stone-400">
-                      No products found matching your search. Click "+ Add Habesha Attire" above to create one.
+                    <td colSpan={7} className="py-16 text-center text-stone-500">
+                      <div className="max-w-sm mx-auto space-y-2">
+                        <ImageIcon className="w-8 h-8 mx-auto text-stone-300" />
+                        <p className="font-serif font-bold text-sm text-[#2D241E]">
+                          No products found
+                        </p>
+                        <p className="text-xs text-stone-500">
+                          Your database is clean and ready. Click "+ Add Habesha Attire" above to upload your first real dress!
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -971,66 +1071,55 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <tr key={p.id} className="hover:bg-[#F9F4EC]/60 transition-colors">
                       <td className="py-3 px-4">
                         <img
-                          src={p.image}
+                          src={p.image || DEFAULT_PRODUCT_IMAGE}
                           alt={p.nameEn}
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                          }}
                           className="w-12 h-14 object-cover object-top rounded-lg border border-[#EAD8C0] bg-stone-100"
                         />
                       </td>
                       <td className="py-3 px-4 font-mono font-bold text-[#8B0000]">
                         {p.code}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-[#2D241E] font-ethiopic">{p.nameAm}</div>
-                        <div className="text-[11px] text-stone-500">{p.nameEn}</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {p.hashtags?.slice(0, 2).map((h) => (
-                            <span key={h} className="text-[9px] bg-stone-100 px-1.5 py-0.5 rounded text-stone-600">
-                              {h}
-                            </span>
-                          ))}
-                        </div>
+                      <td className="py-3 px-4 max-w-xs">
+                        <div className="font-bold text-[#2D241E] truncate">{p.nameEn}</div>
+                        <div className="text-[11px] text-stone-500 font-ethiopic truncate">{p.nameAm}</div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-stone-100 text-stone-700">
-                          {p.categoryGroup === 'events' ? 'Events' : p.categoryGroup === 'men_couples' ? 'Couples & Men' : 'Fabrics & Chiffon'}
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-[#F9F4EC] border border-[#EAD8C0] text-stone-700">
+                          {p.categoryGroup}
                         </span>
                       </td>
                       <td className="py-3 px-4 font-bold text-[#8B0000]">
-                        <div>{p.priceETB.toLocaleString()} ETB</div>
-                        {p.originalPriceETB && (
-                          <div className="text-[10px] text-stone-400 line-through">
-                            {p.originalPriceETB.toLocaleString()} ETB
-                          </div>
-                        )}
+                        {p.priceETB?.toLocaleString()} ETB
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex flex-col items-start gap-1">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            p.inStock ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {p.inStock ? 'In Stock' : 'Made to Order'}
+                        {p.inStock ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-bold text-[11px]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            Active
                           </span>
-                          {p.featured && (
-                            <span className="text-[9px] text-[#C5A059] font-bold">★ Featured</span>
-                          )}
-                        </div>
+                        ) : (
+                          <span className="text-stone-400 text-[11px]">Inactive</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleStartEdit(p)}
-                            className="p-1.5 rounded-lg text-stone-600 hover:bg-[#8B0000]/10 hover:text-[#8B0000] transition-colors cursor-pointer"
-                            title="Edit product"
+                            className="p-1.5 rounded-lg text-stone-600 hover:text-[#8B0000] hover:bg-white border border-transparent hover:border-[#EAD8C0] transition-colors cursor-pointer"
+                            title="Edit Product"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setProductToDelete(p)}
-                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                            title="Delete product"
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Delete Product"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -1040,15 +1129,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </tbody>
             </table>
           </div>
+
         </div>
 
-      </div>
+      </main>
 
-      {/* ============================================================ */}
-      {/* IN-APP CONFIRMATION MODALS (replaces window.confirm) */}
-      {/* ============================================================ */}
-      
-      {/* Delete Confirmation Modal */}
+      {/* Delete Single Product Confirmation Modal */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 border border-[#EAD8C0] shadow-2xl space-y-4">
@@ -1086,38 +1172,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* Seed Catalog Confirmation Modal */}
-      {showSeedConfirm && (
+      {/* Clear All Test Products Confirmation Modal */}
+      {showClearConfirm && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="relative w-full max-w-md bg-white rounded-3xl p-6 border border-[#EAD8C0] shadow-2xl space-y-4">
-            <div className="w-12 h-12 rounded-full bg-[#8B0000]/10 text-[#8B0000] mx-auto flex items-center justify-center">
-              <Database className="w-6 h-6 text-[#C5A059]" />
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-700 mx-auto flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
             </div>
             
             <div className="text-center">
               <h3 className="text-lg font-serif font-bold text-[#2D241E]">
-                Sync Authentic Shiromeda Catalog
+                Clear All Test Products?
               </h3>
               <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-                This will write all default handcrafted Habesha attires into your Firebase Firestore collection. Any products already there will be updated or preserved.
+                This will delete all test products from your Firebase Firestore database so you can start completely fresh with your real product catalog.
               </p>
             </div>
 
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setShowSeedConfirm(false)}
+                onClick={() => setShowClearConfirm(false)}
                 className="flex-1 py-2.5 rounded-xl border border-[#EAD8C0] text-xs font-bold text-stone-600 hover:bg-stone-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={confirmSeedCatalog}
+                onClick={confirmClearAll}
                 disabled={saving}
-                className="flex-1 py-2.5 bg-[#8B0000] hover:bg-[#A52A2A] text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50"
               >
-                {saving ? 'Writing to Firestore...' : 'Sync Products'}
+                {saving ? 'Clearing...' : 'Yes, Clear All'}
               </button>
             </div>
           </div>

@@ -1,9 +1,8 @@
 import React from 'react';
-import { Sparkles, MapPin, Phone, Award, Heart, CheckCircle2, ShieldCheck, Users } from 'lucide-react';
+import { Sparkles, MapPin, Phone, Award, Heart, CheckCircle2, ShieldCheck, Users, Scissors, Flame } from 'lucide-react';
 import { STORE_INFO } from '../data/categories';
 import { getTranslation } from '../data/translations';
 import { Language } from '../types';
-import { imgWedding, imgCouple, imgGondar } from '../data/products';
 
 interface AboutUsPageProps {
   language: Language;
@@ -70,19 +69,55 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({
             </div>
           </div>
 
-          <div className="lg:col-span-6 grid grid-cols-2 gap-4">
-            <img
-              src={imgWedding}
-              alt="Abel Habesha Wedding Kemis"
-              referrerPolicy="no-referrer"
-              className="rounded-3xl h-64 sm:h-72 w-full object-cover shadow-lg border border-[#EAD8C0]"
-            />
-            <img
-              src={imgCouple}
-              alt="Abel Habesha Couple Set"
-              referrerPolicy="no-referrer"
-              className="rounded-3xl h-64 sm:h-72 w-full object-cover shadow-lg border border-[#EAD8C0] mt-6"
-            />
+          {/* Cultural Atelier Craft Cards */}
+          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-6 rounded-3xl bg-linear-to-br from-[#8B0000] to-[#5C0000] text-white shadow-xl border border-[#C5A059]/30 flex flex-col justify-between h-72">
+              <div className="flex items-center justify-between">
+                <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl text-[#C5A059]">
+                  ✞
+                </span>
+                <span className="text-[11px] font-bold px-2.5 py-1 bg-[#C5A059] text-white rounded-full uppercase tracking-wider">
+                  Shiromeda
+                </span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-serif font-bold text-lg text-white">
+                  {language === 'am' ? 'የእንጨት ሽመና ጥበብ' : 'Wooden Loom Heritage'}
+                </h3>
+                <p className="text-xs text-white/80 leading-relaxed">
+                  {language === 'am' 
+                    ? 'በእጅ የሚፈተል ጥጥ እና በእንጨት እቃዎች የሚሸመኑ ጥራት ያላቸው የሀበሻ ቀሚሶች።' 
+                    : 'Artisanal handloom weaving using generational techniques passed down in Addis Ababa.'}
+                </p>
+              </div>
+              <div className="text-[11px] font-mono text-[#C5A059] pt-2 border-t border-white/15">
+                100% Handcrafted • Axum Fetel
+              </div>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-[#F9F4EC] text-[#2D241E] shadow-lg border border-[#EAD8C0] flex flex-col justify-between h-72 sm:mt-6">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-xl bg-[#8B0000] text-white flex items-center justify-center">
+                  <Scissors className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-1 bg-[#8B0000]/10 text-[#8B0000] rounded-full uppercase tracking-wider">
+                  Bespoke
+                </span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="font-serif font-bold text-lg text-[#2D241E]">
+                  {language === 'am' ? 'በልክ የሚሰፉ አልባሳት' : 'Made to Measure'}
+                </h3>
+                <p className="text-xs text-[#2D241E]/75 leading-relaxed">
+                  {language === 'am' 
+                    ? 'የሰርግ፣ የመልስ እና የሚዜዎች ልብስ በልክዎ ተሰፍቶ በፈጣን ጊዜ ይደርስዎታል።' 
+                    : 'Personalized custom measurements with quick turnaround times & worldwide delivery.'}
+                </p>
+              </div>
+              <div className="text-[11px] font-mono text-[#8B0000] font-bold pt-2 border-t border-[#EAD8C0]">
+                Addis Ababa • Shiromeda
+              </div>
+            </div>
           </div>
         </div>
 
@@ -99,33 +134,67 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({
           </div>
 
           <div className="p-6 bg-[#F9F4EC] rounded-2xl border border-[#EAD8C0]">
-            <Heart className="w-8 h-8 text-[#C5A059] mb-3" />
-            <h3 className="font-serif font-bold text-base text-[#2D241E] mb-1">
-              {language === 'am' ? 'የሺሮሜዳ የእጅ ጥበብ' : 'Master Loom Craft'}
-            </h3>
-            <p className="text-xs text-[#2D241E]/75 leading-relaxed">
-              {language === 'am' ? 'በሺሮሜዳ ዋና አውደ ጥበብ በእንጨት መወዘሪያ የተሸመኑ እውነተኛ ባህላዊ አልባሳት።' : 'Preserving centuries-old wooden pit-loom weaving techniques in the heart of Addis Ababa.'}
-            </p>
-          </div>
-
-          <div className="p-6 bg-[#F9F4EC] rounded-2xl border border-[#EAD8C0]">
-            <ShieldCheck className="w-8 h-8 text-[#2E4739] mb-3" />
+            <CheckCircle2 className="w-8 h-8 text-[#2E4739] mb-3" />
             <h3 className="font-serif font-bold text-base text-[#2D241E] mb-1">
               {t.fastTurnaround}
             </h3>
             <p className="text-xs text-[#2D241E]/75 leading-relaxed">
-              {language === 'am' ? 'በመረጡት ቀን በልክዎ ተሰፍቶ በጥንቃቄ ይደርሳል።' : 'Quick bespoke tailoring to your exact body measurements and requested date.'}
+              {language === 'am' ? 'በ 2 እስከ 5 ቀናት ውስጥ ትዕዛዝዎን አጠናቀን በታማኝነት እናስረክባለን።' : 'Expedited tailoring completing bespoke wedding orders in as fast as 2-5 days.'}
             </p>
           </div>
 
           <div className="p-6 bg-[#F9F4EC] rounded-2xl border border-[#EAD8C0]">
-            <Users className="w-8 h-8 text-[#25D366] mb-3" />
+            <Users className="w-8 h-8 text-[#C5A059] mb-3" />
             <h3 className="font-serif font-bold text-base text-[#2D241E] mb-1">
               {t.bulkDiscountTitle}
             </h3>
             <p className="text-xs text-[#2D241E]/75 leading-relaxed">
-              {t.bulkDiscountDesc}
+              {language === 'am' ? 'ለሰርግ ሙሽሮች፣ ለሚዜዎች እና ለቤተሰብ የጅምላ ትዕዛዞች ከፍተኛ ቅናሽ።' : 'Attractive tiered discounts for bridal trains, church choirs, and festive family events.'}
             </p>
+          </div>
+
+          <div className="p-6 bg-[#F9F4EC] rounded-2xl border border-[#EAD8C0]">
+            <ShieldCheck className="w-8 h-8 text-[#8B0000] mb-3" />
+            <h3 className="font-serif font-bold text-base text-[#2D241E] mb-1">
+              {language === 'am' ? 'የአለም አቀፍ መላኪያ' : 'Worldwide Delivery'}
+            </h3>
+            <p className="text-xs text-[#2D241E]/75 leading-relaxed">
+              {language === 'am' ? 'በዲኤችኤል (DHL) እና በፖስታ በኩል ወደ አሜሪካ፣ አውሮፓ እና መካከለኛው ምስራቅ እንልካለን።' : 'Secure international shipping via DHL Express to USA, Europe, Canada & Middle East.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Physical Store Location Card */}
+        <div className="p-8 sm:p-10 rounded-3xl bg-[#2D241E] text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+          <div className="space-y-2 text-center md:text-left">
+            <span className="text-[#C5A059] text-xs font-bold uppercase tracking-wider">
+              {language === 'am' ? 'በአካል መጥተው ይጎብኙን' : 'Visit Our Physical Atelier'}
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-serif font-bold">
+              {STORE_INFO.name}
+            </h3>
+            <p className="text-sm text-white/80 max-w-xl">
+              {currentAddress} • {language === 'am' ? 'ሰኞ - ቅዳሜ 2:30 - 12:30' : 'Mon - Sat 8:30 AM - 6:30 PM'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={`tel:${STORE_INFO.phone}`}
+              className="px-6 py-3 bg-[#8B0000] text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-[#A52A2A] transition-colors flex items-center gap-2"
+            >
+              <Phone className="w-4 h-4" />
+              <span>{STORE_INFO.phoneDisplay}</span>
+            </a>
+            <a
+              href={STORE_INFO.whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-colors flex items-center gap-2"
+            >
+              <MapPin className="w-4 h-4 text-[#C5A059]" />
+              <span>{language === 'am' ? 'አድራሻ / WhatsApp' : 'Atelier Contact'}</span>
+            </a>
           </div>
         </div>
 

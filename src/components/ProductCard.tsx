@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Product, Language } from '../types';
 import { STORE_INFO, getCategoryShortDisplay } from '../data/categories';
+import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { 
   getTranslation, 
   getProductName, 
@@ -68,9 +69,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Image Container with Badges */}
       <div className="relative aspect-4/5 overflow-hidden bg-[#F9F4EC]">
         <img
-          src={product.image}
+          src={product.image || DEFAULT_PRODUCT_IMAGE}
           alt={getProductName(product, language)}
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+          }}
           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />

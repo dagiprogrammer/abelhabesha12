@@ -10,20 +10,21 @@ import {
   Scissors
 } from 'lucide-react';
 import { STORE_INFO } from '../data/categories';
-import { imgWedding } from '../data/products';
 import { getTranslation } from '../data/translations';
-import { Language } from '../types';
+import { Language, Product } from '../types';
 
 interface HeroProps {
   language: Language;
   onExploreCatalog: () => void;
   onOpenCustomOrder: () => void;
+  featuredProduct?: Product;
 }
 
 export const Hero: React.FC<HeroProps> = ({
   language,
   onExploreCatalog,
   onOpenCustomOrder,
+  featuredProduct,
 }) => {
   const t = getTranslation(language);
   const currentAddress = language === 'ti' ? STORE_INFO.addressTi : (language === 'am' ? STORE_INFO.addressAm : STORE_INFO.addressEn);
@@ -124,56 +125,99 @@ export const Hero: React.FC<HeroProps> = ({
           <div className="lg:col-span-5">
             <div className="relative mx-auto max-w-md lg:max-w-none">
               
-              {/* Main Image in Elegant Card */}
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
-                <img
-                  src={imgWedding}
-                  alt="Abel Habesha Traditional Dress"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-[420px] object-cover object-center transform hover:scale-105 transition-transform duration-700"
-                />
-                
-                {/* Overlay Badge */}
-                <div className="absolute top-4 left-4 bg-[#8B0000] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                  <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
-                  <span>{t.newCollectionTag}</span>
-                </div>
-
-                {/* Floating Vibrant Accent Badges */}
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
-                  <div className="bg-[#D4AF37] text-white px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-tight shadow-md rotate-2">
-                    {t.weddingCollection}
-                  </div>
-                  <div className="bg-[#2E4739] text-white px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-tight shadow-md -rotate-2">
-                    {t.melsCollection}
-                  </div>
-                </div>
-
-                {/* Bottom Card Snippet */}
-                <div className="absolute bottom-4 inset-x-4 p-4 rounded-2xl bg-[#FDFCF8]/95 backdrop-blur-md border border-[#EAD8C0] shadow-lg flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#8B0000]">
-                      <span>#የሰርግ_ልብስ</span>
-                      <span>•</span>
-                      <span>#አክሱም_ፈተል</span>
+              {/* Main Image or Authentic Craft Showcase Card */}
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-[#FDFCF8]">
+                {featuredProduct?.image ? (
+                  <img
+                    src={featuredProduct.image}
+                    alt={language === 'am' ? featuredProduct.nameAm : featuredProduct.nameEn}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-[420px] object-cover object-center transform hover:scale-105 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="w-full h-[420px] bg-linear-to-b from-[#F9F4EC] to-[#F2E8DC] p-8 flex flex-col justify-between relative overflow-hidden border border-[#EAD8C0]">
+                    {/* Cultural background watermark */}
+                    <div className="absolute inset-0 opacity-5 flex items-center justify-center text-9xl select-none pointer-events-none">
+                      ❖
                     </div>
-                    <h3 className="font-bold text-sm text-[#2D241E] font-serif">
-                      {t.heroCardTitle}
-                    </h3>
-                    <p className="text-xs text-[#2D241E]/70">
-                      {t.tailoredToSize}
-                    </p>
+
+                    <div className="relative z-10 flex items-center justify-between">
+                      <span className="px-3.5 py-1.5 rounded-full bg-[#8B0000] text-white text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                        <span>{language === 'am' ? 'የሺሮሜዳ እደ-ጥበብ' : 'Shiromeda Atelier'}</span>
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-[#C5A059] text-white text-[11px] font-bold shadow-xs">
+                        100% {language === 'am' ? 'ንጹህ ጥጥ' : 'Pure Cotton'}
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 text-center my-auto py-6">
+                      <div className="w-20 h-20 mx-auto rounded-2xl bg-[#8B0000] text-[#C5A059] flex items-center justify-center shadow-lg border-2 border-[#C5A059] mb-4">
+                        <span className="text-3xl font-serif">✞</span>
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2D241E] mb-2">
+                        {language === 'am' ? 'አቤል ሀበሻ ባህላዊ ልብሶች' : 'Abel Habesha Attire'}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-[#2D241E]/80 max-w-xs mx-auto leading-relaxed">
+                        {language === 'am' 
+                          ? 'በሺሮሜዳ እምብርት በእጅ የሚሸመኑ ጥራት ያላቸው የሰርግ፣ የመልስ እና የክብረ-በዓላት አልባሳት።' 
+                          : 'Masterfully handwoven bridal gowns, meles zuria, and cultural garments in the heart of Shiromeda.'}
+                      </p>
+                    </div>
+
+                    <div className="relative z-10 p-3.5 rounded-2xl bg-white/90 backdrop-blur-sm border border-[#EAD8C0] flex items-center justify-between shadow-sm">
+                      <div className="text-left">
+                        <p className="text-[11px] font-bold text-[#8B0000]">
+                          {language === 'am' ? 'በልክ የሚሰፉ ትዕዛዞች' : 'Custom Tailoring Available'}
+                        </p>
+                        <p className="text-[11px] text-[#2D241E]/70">
+                          {language === 'am' ? 'በዋትስአፕ ወይም በቴሌግራም ያነጋግሩን' : 'Order via WhatsApp or Telegram'}
+                        </p>
+                      </div>
+                      <a
+                        href={STORE_INFO.whatsappUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2.5 bg-[#25D366] text-white rounded-xl hover:bg-[#1faa4f] transition-colors shadow-xs"
+                        title="Order via WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </a>
+                    </div>
                   </div>
-                  <a
-                    href={STORE_INFO.whatsappUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2.5 bg-[#25D366] text-white rounded-xl hover:bg-[#1faa4f] transition-colors shadow-sm"
-                    title="Order this via WhatsApp"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                  </a>
-                </div>
+                )}
+                
+                {/* Overlay Badge if product is shown */}
+                {featuredProduct?.image && (
+                  <>
+                    <div className="absolute top-4 left-4 bg-[#8B0000] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                      <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                      <span>{t.newCollectionTag}</span>
+                    </div>
+
+                    <div className="absolute bottom-4 inset-x-4 p-4 rounded-2xl bg-[#FDFCF8]/95 backdrop-blur-md border border-[#EAD8C0] shadow-lg flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#8B0000]">
+                          <span>{featuredProduct.code}</span>
+                          <span>•</span>
+                          <span>{language === 'am' ? featuredProduct.nameAm : featuredProduct.nameEn}</span>
+                        </div>
+                        <p className="text-xs text-[#2D241E]/70 font-serif font-bold mt-0.5">
+                          {featuredProduct.priceETB ? `${featuredProduct.priceETB.toLocaleString()} ETB` : ''}
+                        </p>
+                      </div>
+                      <a
+                        href={STORE_INFO.whatsappUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2.5 bg-[#25D366] text-white rounded-xl hover:bg-[#1faa4f] transition-colors shadow-sm"
+                        title="Order this via WhatsApp"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                      </a>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Floating Mini Badge */}

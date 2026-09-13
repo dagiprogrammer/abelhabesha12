@@ -14,6 +14,7 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { CustomTailoringModal } from './components/CustomTailoringModal';
 import { CartModal } from './components/CartModal';
 import { Footer } from './components/Footer';
+import { FloatingContact } from './components/FloatingContact';
 
 function parseInitialView(): ViewType {
   if (typeof window !== 'undefined') {
@@ -43,7 +44,7 @@ export function App() {
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   
   // App view & preferences
-  const [language, setLanguage] = useState<Language>('am');
+  const [language, setLanguage] = useState<Language>('en');
   const [currency, setCurrency] = useState<'ETB' | 'USD'>('ETB');
   const [currentView, setCurrentView] = useState<ViewType>(parseInitialView);
   
@@ -348,6 +349,9 @@ export function App() {
           }}
         />
       )}
+
+      {/* Floating Bottom Right Quick Contacts (WhatsApp, Telegram, Email) */}
+      <FloatingContact language={language} />
 
     </div>
   );

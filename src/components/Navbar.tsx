@@ -9,9 +9,7 @@ import {
   MessageCircle,
   Menu,
   X,
-  Sparkles,
-  SlidersHorizontal,
-  ShieldCheck
+  Sparkles
 } from 'lucide-react';
 import { STORE_INFO } from '../data/categories';
 import { getTranslation } from '../data/translations';
@@ -93,15 +91,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Send className="w-3 h-3 text-[#29b6f6]" />
               <span>@{STORE_INFO.telegramUser}</span>
             </a>
-            <span className="text-white/30">|</span>
-            <button
-              onClick={() => onNavigate && onNavigate('admin')}
-              className="flex items-center gap-1 text-[#C5A059] hover:text-white transition-colors cursor-pointer font-bold text-[11px]"
-              title="Admin Portal / ምርቶች ማስተዳደሪያ"
-            >
-              <ShieldCheck className="w-3 h-3" />
-              <span>Admin / ምሕደራ</span>
-            </button>
           </div>
         </div>
       </div>
@@ -271,15 +260,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Admin Quick Link */}
-            <button
-              onClick={() => onNavigate && onNavigate('admin')}
-              className="p-2 rounded-full border border-[#EAD8C0] bg-white text-stone-700 hover:text-[#8B0000] hover:border-[#8B0000] transition-colors flex items-center justify-center cursor-pointer"
-              title="Admin Portal (የምርት አስተዳዳሪ)"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-
             {/* Cart Button */}
             <button
               onClick={onOpenCart}
@@ -391,24 +371,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <span>📍</span>
                 <span>{t.navContact}</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (onNavigate) onNavigate('admin');
-                  setMobileMenuOpen(false);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold text-left transition-colors flex items-center justify-between ${
-                  currentView === 'admin'
-                    ? 'bg-[#8B0000] text-white'
-                    : 'bg-[#8B0000]/10 text-[#8B0000] hover:bg-[#8B0000]/20'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Admin / አስተዳዳሪ (ካታሎግ)</span>
-                </span>
-                <span>→</span>
               </button>
             </div>
 

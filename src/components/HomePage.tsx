@@ -6,7 +6,9 @@ import {
   Clock, 
   HeartHandshake, 
   ShoppingBag,
-  Scissors
+  Scissors,
+  PlusCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { Product, Language } from '../types';
 import { Hero } from './Hero';
@@ -14,7 +16,6 @@ import { ProductCard } from './ProductCard';
 import { HowToOrderSection } from './HowToOrderSection';
 import { getTranslation } from '../data/translations';
 import { CATEGORIES } from '../data/categories';
-import { imgWedding, imgCouple, imgMeles, imgChiffon } from '../data/products';
 
 interface HomePageProps {
   products: Product[];
@@ -44,12 +45,40 @@ export const HomePage: React.FC<HomePageProps> = ({
   const bestSellers = products.filter((p) => p.bestSeller).slice(0, 4);
   const featuredProducts = products.filter((p) => p.featured || !p.bestSeller).slice(0, 4);
 
-  // Curated highlight collections
+  // Occasions / collections with cultural gradients & icons (no AI/test images)
   const highlightCategories = [
-    { tag: '#የሰርግ_ልብስ', nameAm: 'የሰርግ ልብስ', nameEn: 'Wedding Dresses', image: imgWedding },
-    { tag: '#የመልስ_ልብስ', nameAm: 'የመልስ ልብስ', nameEn: 'Meles Gowns', image: imgMeles },
-    { tag: '#የጥንድ_ልብስ', nameAm: 'የጥንድ ልብስ', nameEn: 'Couple Sets', image: imgCouple },
-    { tag: '#ሺፎን_እና_ቻይና', nameAm: 'ዘመናዊ ሺፎን', nameEn: 'Modern Chiffon', image: imgChiffon },
+    { 
+      tag: '#የሰርግ_ልብስ', 
+      nameAm: 'የሰርግ ልብስ', 
+      nameEn: 'Wedding Dresses', 
+      gradient: 'from-[#8B0000] to-[#5C0000]',
+      motif: '👰',
+      matchedProduct: products.find(p => p.hashtags?.some(h => h.includes('ሰርግ') || h.includes('wedding')))
+    },
+    { 
+      tag: '#የመልስ_ልብስ', 
+      nameAm: 'የመልስ ልብስ', 
+      nameEn: 'Meles Gowns', 
+      gradient: 'from-[#2E4739] to-[#1a2d23]',
+      motif: '👑',
+      matchedProduct: products.find(p => p.hashtags?.some(h => h.includes('መልስ') || h.includes('meles')))
+    },
+    { 
+      tag: '#የጥንድ_ልብስ', 
+      nameAm: 'የጥንድ ልብስ', 
+      nameEn: 'Couple Sets', 
+      gradient: 'from-[#C5A059] to-[#8c6c2e]',
+      motif: '✨',
+      matchedProduct: products.find(p => p.hashtags?.some(h => h.includes('ጥንድ') || h.includes('couple')))
+    },
+    { 
+      tag: '#ሺፎን_እና_ቻይና', 
+      nameAm: 'ዘመናዊ ሺፎን', 
+      nameEn: 'Modern Chiffon', 
+      gradient: 'from-[#2D241E] to-[#17120e]',
+      motif: '🧵',
+      matchedProduct: products.find(p => p.hashtags?.some(h => h.includes('ሺፎን') || h.includes('chiffon')))
+    },
   ];
 
   return (
@@ -60,6 +89,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         language={language}
         onExploreCatalog={onExploreCatalog}
         onOpenCustomOrder={onOpenCustomOrder}
+        featuredProduct={products[0]}
       />
 
       {/* Occasion / Heritage Collections Rail */}
@@ -88,22 +118,41 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div
                 key={idx}
                 onClick={() => onSelectCategoryTag(item.tag)}
-                className="group relative rounded-2xl overflow-hidden aspect-4/3 cursor-pointer shadow-xs border border-[#EAD8C0] hover:border-[#8B0000] transition-all"
+                className={`group relative rounded-2xl overflow-hidden aspect-4/3 cursor-pointer shadow-xs border border-[#EAD8C0] hover:border-[#8B0000] transition-all bg-linear-to-br ${item.gradient}`}
               >
-                <img
-                  src={item.image}
-                  alt={item.nameEn}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-3.5 text-white">
-                  <span className="text-[10px] text-[#C5A059] font-bold">
-                    {item.tag}
-                  </span>
-                  <h3 className="font-serif font-bold text-sm sm:text-base leading-snug group-hover:text-[#C5A059] transition-colors">
-                    {language === 'am' ? item.nameAm : item.nameEn}
-                  </h3>
-                </div>
+                {item.matchedProduct?.image ? (
+                  <img
+                    src={item.matchedProduct.image}
+                    alt={item.nameEn}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col justify-between p-4">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-base">
+                      {item.motif}
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#C5A059] font-bold block mb-1">
+                        {item.tag}
+                      </span>
+                      <h3 className="font-serif font-bold text-sm sm:text-base text-white leading-snug group-hover:text-[#C5A059] transition-colors">
+                        {language === 'am' ? item.nameAm : item.nameEn}
+                      </h3>
+                    </div>
+                  </div>
+                )}
+                
+                {item.matchedProduct?.image && (
+                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-3.5 text-white">
+                    <span className="text-[10px] text-[#C5A059] font-bold">
+                      {item.tag}
+                    </span>
+                    <h3 className="font-serif font-bold text-sm sm:text-base leading-snug group-hover:text-[#C5A059] transition-colors">
+                      {language === 'am' ? item.nameAm : item.nameEn}
+                    </h3>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -124,28 +173,60 @@ export const HomePage: React.FC<HomePageProps> = ({
               </h2>
             </div>
 
-            <button
-              onClick={onExploreCatalog}
-              className="px-4 py-2 rounded-xl border border-[#EAD8C0] hover:border-[#8B0000] bg-white text-xs font-bold text-[#2D241E] hover:text-[#8B0000] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <span>{t.viewAllProductsBtn}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            {products.length > 0 && (
+              <button
+                onClick={onExploreCatalog}
+                className="px-4 py-2 rounded-xl border border-[#EAD8C0] hover:border-[#8B0000] bg-white text-xs font-bold text-[#2D241E] hover:text-[#8B0000] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <span>{t.viewAllProductsBtn}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {bestSellers.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                currency={currency}
-                language={language}
-                onSelectProduct={onSelectProduct}
-                onAddToCart={onAddToCart}
-                onTagClick={onSelectCategoryTag}
-              />
-            ))}
-          </div>
+          {bestSellers.length > 0 ? (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {bestSellers.map((prod) => (
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  currency={currency}
+                  language={language}
+                  onSelectProduct={onSelectProduct}
+                  onAddToCart={onAddToCart}
+                  onTagClick={onSelectCategoryTag}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 sm:p-12 rounded-3xl bg-white border border-[#EAD8C0] text-center max-w-xl mx-auto shadow-xs space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#F9F4EC] text-[#8B0000] flex items-center justify-center text-2xl font-serif">
+                ✞
+              </div>
+              <h3 className="font-serif font-bold text-lg sm:text-xl text-[#2D241E]">
+                {language === 'am' ? 'ምርቶች በቅርቡ ይጫናሉ' : 'Catalog Ready for Real Products'}
+              </h3>
+              <p className="text-xs sm:text-sm text-[#2D241E]/70 leading-relaxed">
+                {language === 'am' 
+                  ? 'የተመረጡ ባህላዊ አልባሳትን በልክ ማሰፋት ይችላሉ። እውነተኛ ፎቶዎች በቅርቡ ይጫናሉ።' 
+                  : 'Real products can be uploaded via the Admin portal. Custom tailoring is available now.'}
+              </p>
+              <div className="pt-2 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={onOpenCustomOrder}
+                  className="px-5 py-2.5 bg-[#8B0000] text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#A52A2A] transition-colors cursor-pointer"
+                >
+                  {t.customOrderBtn}
+                </button>
+                <a
+                  href="/admin"
+                  className="px-5 py-2.5 bg-[#F9F4EC] border border-[#EAD8C0] text-[#8B0000] rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#EAD8C0]/30 transition-colors"
+                >
+                  {language === 'am' ? 'ምርት መጫኛ (Admin)' : 'Upload in Admin'}
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -198,44 +279,46 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* New Arrivals Grid */}
-      <section className="py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5A059]/15 text-[#8B0000] text-xs font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
-                <span>{t.newCollectionTag}</span>
+      {/* New Arrivals Grid (if products exist) */}
+      {featuredProducts.length > 0 && (
+        <section className="py-12 lg:py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5A059]/15 text-[#8B0000] text-xs font-bold mb-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <span>{t.newCollectionTag}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2D241E]">
+                  {t.newArrivalsTitle}
+                </h2>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2D241E]">
-                {t.newArrivalsTitle}
-              </h2>
+
+              <button
+                onClick={onExploreCatalog}
+                className="px-4 py-2 rounded-xl border border-[#EAD8C0] hover:border-[#8B0000] bg-white text-xs font-bold text-[#2D241E] hover:text-[#8B0000] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <span>{t.viewAllProductsBtn}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            <button
-              onClick={onExploreCatalog}
-              className="px-4 py-2 rounded-xl border border-[#EAD8C0] hover:border-[#8B0000] bg-white text-xs font-bold text-[#2D241E] hover:text-[#8B0000] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <span>{t.viewAllProductsBtn}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {featuredProducts.map((prod) => (
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  currency={currency}
+                  language={language}
+                  onSelectProduct={onSelectProduct}
+                  onAddToCart={onAddToCart}
+                  onTagClick={onSelectCategoryTag}
+                />
+              ))}
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {featuredProducts.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                currency={currency}
-                language={language}
-                onSelectProduct={onSelectProduct}
-                onAddToCart={onAddToCart}
-                onTagClick={onSelectCategoryTag}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* How To Order in 4 Easy Steps */}
       <HowToOrderSection language={language} />

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Product, Language } from '../types';
 import { STORE_INFO, getCategoryDisplay } from '../data/categories';
+import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { 
   getTranslation, 
   getProductName, 
@@ -128,9 +129,12 @@ ${notes ? `• Special Notes: ${notes}` : ''}
             <div className="md:col-span-6 flex flex-col gap-4">
               <div className="relative rounded-2xl overflow-hidden shadow-lg border border-[#EAD8C0] bg-[#F9F4EC] aspect-4/5">
                 <img
-                  src={product.image}
+                  src={product.image || DEFAULT_PRODUCT_IMAGE}
                   alt={getProductName(product, language)}
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                  }}
                   className="w-full h-full object-cover object-top"
                 />
 
