@@ -197,17 +197,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <MessageCircle className="w-4 h-4" />
             </a>
 
-            {/* Add to Bag Button */}
+            {/* View & Order Button (Opens Separate Product Detail Page) */}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onAddToCart(product);
+                onSelectProduct(product);
               }}
               className="px-2.5 sm:px-3 py-2 bg-[#2D241E] hover:bg-[#8B0000] text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-              title="Add to order bag"
+              title={language === 'am' ? 'ዝርዝር እና ማዘዣ' : 'View Details & Order'}
             >
-              <ShoppingBag className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="hidden xs:inline">{t.addToBag}</span>
+              <span>{language === 'am' ? 'እዘዙ' : 'Order'}</span>
             </button>
           </div>
         </div>

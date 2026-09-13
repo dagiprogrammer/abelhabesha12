@@ -260,20 +260,27 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Cart Button */}
-            <button
-              onClick={onOpenCart}
-              id="cart-button"
-              className="relative p-2 rounded-full bg-[#2D241E] text-white hover:bg-[#8B0000] transition-colors flex items-center justify-center shadow-xs cursor-pointer"
-              aria-label="Shopping Cart"
+            {/* WhatsApp Quick Order Action */}
+            <a
+              href={STORE_INFO.whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] hover:bg-[#1faa4f] text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+              title="Order on WhatsApp"
             >
-              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F9F4EC]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#C5A059] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#FDFCF8]">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+
+            {/* Direct Call Button */}
+            <a
+              href={`tel:${STORE_INFO.phone}`}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#8B0000] hover:bg-[#6e0000] text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+              title="Call Atelier"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{STORE_INFO.phoneDisplay}</span>
+            </a>
 
             {/* Mobile Menu Button */}
             <button

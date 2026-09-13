@@ -18,6 +18,7 @@
         "priceETB": { "type": "number" },
         "originalPriceETB": { "type": "number" },
         "image": { "type": "string" },
+        "secondaryImages": { "type": "array", "items": { "type": "string" } },
         "descriptionAm": { "type": "string" },
         "descriptionEn": { "type": "string" },
         "descriptionTi": { "type": "string" },

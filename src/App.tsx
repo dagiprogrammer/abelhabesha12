@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Product, Language, ViewType, CategoryGroupId, CartItem } from './types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Product, Language, ViewType, CategoryGroupId } from './types';
 import { PRODUCTS } from './data/products';
 import { subscribeToProducts } from './lib/productsService';
 import { Navbar } from './components/Navbar';
@@ -10,43 +10,50 @@ import { AboutUsPage } from './components/AboutUsPage';
 import { ContactUsPage } from './components/ContactUsPage';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminAuth } from './components/AdminAuth';
-import { ProductDetailModal } from './components/ProductDetailModal';
 import { CustomTailoringModal } from './components/CustomTailoringModal';
-import { CartModal } from './components/CartModal';
 import { Footer } from './components/Footer';
 import { FloatingContact } from './components/FloatingContact';
 
-function parseInitialView(): ViewType {
+function parseInitialRoute(): { view: ViewType; productCode: string | null } {
   if (typeof window !== 'undefined') {
     const rawPath = window.location.pathname.toLowerCase();
     const path = rawPath.replace(/\/+/g, '/');
     const hash = window.location.hash.toLowerCase();
     const search = window.location.search.toLowerCase();
     
+    // Check for product code in hash or path (e.g. #product-AH-1001 or #/product/AH-1001)
+    const productMatch = hash.match(/product[-/]([a-z0-9-]+)/i) || path.match(/product\/([a-z0-9-]+)/i);
+    if (productMatch && productMatch[1]) {
+      return { view: 'detail', productCode: productMatch[1].toUpperCase() };
+    }
+
     if (path.includes('admin') || hash.includes('admin') || search.includes('admin')) {
-      return 'admin';
+      return { view: 'admin', productCode: null };
     }
     if (path.includes('product') || hash.includes('product') || search.includes('product')) {
-      return 'products';
+      return { view: 'products', productCode: null };
     }
     if (path.includes('about') || hash.includes('about') || search.includes('about')) {
-      return 'about';
+      return { view: 'about', productCode: null };
     }
     if (path.includes('contact') || hash.includes('contact') || search.includes('contact')) {
-      return 'contact';
+      return { view: 'contact', productCode: null };
     }
   }
-  return 'home';
+  return { view: 'home', productCode: null };
 }
 
 export function App() {
-  // Products from Firebase Firestore with fallback to seed catalog
+  // Live products from Firebase Firestore
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   
   // App view & preferences
   const [language, setLanguage] = useState<Language>('en');
   const [currency, setCurrency] = useState<'ETB' | 'USD'>('ETB');
-  const [currentView, setCurrentView] = useState<ViewType>(parseInitialView);
+  
+  const initialRoute = parseInitialRoute();
+  const [currentView, setCurrentView] = useState<ViewType>(initialRoute.view);
+  const [pendingProductCode, setPendingProductCode] = useState<string | null>(initialRoute.productCode);
   
   // Selection states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -54,20 +61,8 @@ export function App() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Cart state
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('abel_habesha_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Modal open states
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  // Custom bespoke tailoring modal
   const [isCustomOrderOpen, setIsCustomOrderOpen] = useState(false);
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   
   // Admin auth
   const [isAdminAuthOpen, setIsAdminAuthOpen] = useState(false);
@@ -79,23 +74,19 @@ export function App() {
     }
   });
 
-  // URL history synchronization for /admin and storefront views
+  // Match pending product code when products list is loaded/updated
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const targetPath = currentView === 'admin' ? '/admin' : currentView === 'home' ? '/' : `/${currentView}`;
-      if (window.location.pathname !== targetPath) {
-        window.history.pushState({ view: currentView }, '', targetPath);
+    if (pendingProductCode && products.length > 0) {
+      const match = products.find(
+        (p) => p.code.toUpperCase() === pendingProductCode || p.id === pendingProductCode
+      );
+      if (match) {
+        setSelectedProduct(match);
+        setCurrentView('detail');
       }
+      setPendingProductCode(null);
     }
-  }, [currentView]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentView(parseInitialView());
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [pendingProductCode, products]);
 
   // Subscribe to live Firestore updates on mount
   useEffect(() => {
@@ -107,95 +98,75 @@ export function App() {
     return () => unsubscribe();
   }, []);
 
-  // Persist cart items to localStorage
+  // URL history & route sync
   useEffect(() => {
-    try {
-      localStorage.setItem('abel_habesha_cart', JSON.stringify(cartItems));
-    } catch {
-      // ignore
+    if (typeof window !== 'undefined') {
+      if (currentView === 'detail' && selectedProduct) {
+        window.history.replaceState({ view: 'detail', code: selectedProduct.code }, '', `/#product-${selectedProduct.code}`);
+      } else if (currentView === 'admin') {
+        window.history.replaceState({ view: 'admin' }, '', '/admin');
+      } else if (currentView === 'home') {
+        window.history.replaceState({ view: 'home' }, '', '/');
+      } else {
+        window.history.replaceState({ view: currentView }, '', `/${currentView}`);
+      }
     }
-  }, [cartItems]);
+  }, [currentView, selectedProduct]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = parseInitialRoute();
+      if (route.view === 'detail' && route.productCode) {
+        setPendingProductCode(route.productCode);
+      } else {
+        setCurrentView(route.view);
+        setSelectedProduct(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('hashchange', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('hashchange', handlePopState);
+    };
+  }, []);
 
   // Scroll to top on view change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentView, selectedProduct]);
 
-  // Cart operations
-  const handleAddToCart = (product: Product) => {
-    setCartItems((prev) => {
-      const existingIdx = prev.findIndex((item) => item.product.id === product.id && item.size === 'Standard');
-      if (existingIdx >= 0) {
-        const updated = [...prev];
-        updated[existingIdx].quantity += 1;
-        return updated;
-      }
-      return [...prev, { product, size: 'Standard', quantity: 1 }];
-    });
-    setIsCartOpen(true);
-  };
-
-  const handleAddToCartWithDetails = (
-    product: Product,
-    size: string,
-    measurements?: { length?: string; bustChest?: string; waist?: string; hips?: string },
-    notes?: string
-  ) => {
-    setCartItems((prev) => [
-      ...prev,
-      {
-        product,
-        size,
-        customMeasurements: measurements,
-        notes,
-        quantity: 1
-      }
-    ]);
-    if (quickViewProduct) setQuickViewProduct(null);
-    setIsCartOpen(true);
-  };
-
-  const handleUpdateQuantity = (index: number, quantity: number) => {
-    setCartItems((prev) => {
-      const updated = [...prev];
-      updated[index].quantity = quantity;
-      return updated;
-    });
-  };
-
-  const handleRemoveCartItem = (index: number) => {
-    setCartItems((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  const handleClearCart = () => {
-    setCartItems([]);
-  };
-
   // Navigation handlers
-  const handleNavigate = (view: 'home' | 'products' | 'about' | 'contact' | 'admin') => {
+  const handleNavigate = useCallback((view: 'home' | 'products' | 'about' | 'contact' | 'admin') => {
     setCurrentView(view);
     setSelectedProduct(null);
     if (view === 'admin' && !isAuthenticatedAdmin) {
       setIsAdminAuthOpen(true);
     }
-  };
+  }, [isAuthenticatedAdmin]);
 
-  const handleSelectProduct = (product: Product) => {
+  const handleSelectProduct = useCallback((product: Product) => {
     setSelectedProduct(product);
     setCurrentView('detail');
-  };
+  }, []);
 
-  const handleSelectCategoryTag = (tag: string) => {
+  const handleBackFromDetail = useCallback(() => {
+    setSelectedProduct(null);
+    setCurrentView('products');
+  }, []);
+
+  const handleSelectCategoryTag = useCallback((tag: string) => {
     setSelectedTag(tag);
     setSelectedGroup('all');
     setCurrentView('products');
-  };
+  }, []);
 
-  const handleExploreCatalog = () => {
+  const handleExploreCatalog = useCallback(() => {
     setSelectedTag(null);
     setSelectedGroup('all');
     setCurrentView('products');
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FDFCF8] text-[#2D241E] flex flex-col selection:bg-[#8B0000]/15 selection:text-[#8B0000]">
@@ -206,8 +177,8 @@ export function App() {
         onLanguageChange={setLanguage}
         currency={currency}
         onCurrencyChange={setCurrency}
-        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-        onOpenCart={() => setIsCartOpen(true)}
+        cartCount={0}
+        onOpenCart={() => {}}
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setSearchQuery(q);
@@ -231,7 +202,7 @@ export function App() {
             onExploreCatalog={handleExploreCatalog}
             onOpenCustomOrder={() => setIsCustomOrderOpen(true)}
             onSelectProduct={handleSelectProduct}
-            onAddToCart={handleAddToCart}
+            onAddToCart={handleSelectProduct}
             onSelectCategoryTag={handleSelectCategoryTag}
             onNavigateAbout={() => handleNavigate('about')}
           />
@@ -248,7 +219,7 @@ export function App() {
             onSelectTag={setSelectedTag}
             searchQuery={searchQuery}
             onSelectProduct={handleSelectProduct}
-            onAddToCart={handleAddToCart}
+            onAddToCart={handleSelectProduct}
           />
         )}
 
@@ -258,9 +229,8 @@ export function App() {
             allProducts={products}
             currency={currency}
             language={language}
-            onBack={() => setCurrentView('products')}
+            onBack={handleBackFromDetail}
             onSelectProduct={handleSelectProduct}
-            onAddToCartWithDetails={handleAddToCartWithDetails}
             onTagClick={handleSelectCategoryTag}
           />
         )}
@@ -301,17 +271,6 @@ export function App() {
         onNavigate={handleNavigate}
       />
 
-      {/* Quick View / Detail Modal */}
-      {quickViewProduct && (
-        <ProductDetailModal
-          product={quickViewProduct}
-          currency={currency}
-          language={language}
-          onClose={() => setQuickViewProduct(null)}
-          onAddToCartWithDetails={handleAddToCartWithDetails}
-        />
-      )}
-
       {/* Custom Tailoring Request Modal */}
       {isCustomOrderOpen && (
         <CustomTailoringModal
@@ -319,18 +278,6 @@ export function App() {
           onClose={() => setIsCustomOrderOpen(false)}
         />
       )}
-
-      {/* Slide-out Order Bag Modal */}
-      <CartModal
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-        currency={currency}
-        language={language}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveCartItem}
-        onClearCart={handleClearCart}
-      />
 
       {/* Admin Authentication Gate Modal */}
       {(isAdminAuthOpen || (currentView === 'admin' && !isAuthenticatedAdmin)) && (
@@ -350,8 +297,10 @@ export function App() {
         />
       )}
 
-      {/* Floating Bottom Right Quick Contacts (WhatsApp, Telegram, Email) */}
-      <FloatingContact language={language} />
+      {/* Floating Bottom Right Quick Contacts - Hidden on Admin View */}
+      {currentView !== 'admin' && (
+        <FloatingContact language={language} />
+      )}
 
     </div>
   );

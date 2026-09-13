@@ -192,6 +192,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [customTagInput, setCustomTagInput] = useState('');
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Table search & filters
@@ -222,6 +223,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       priceETB: 24000,
       originalPriceETB: 27500,
       image: '',
+      secondaryImages: [],
       descriptionAm: 'በሺሮሜዳ በባለሙያዎች የተሸመነ እውነተኛ ባህላዊ አልባሳት።',
       descriptionEn: 'Handcrafted in Shiromeda with intricate embroidery and matching netela.',
       descriptionTi: 'ኣብ ሽሮሜዳ ብክኢላታት ዝተፈተለን ዝተሰፈየን ባህላዊ ክዳን።',
@@ -241,7 +243,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       id: prev?.id || `prod-${Date.now()}`,
       code: prev?.code || `AH-${Math.floor(1000 + Math.random() * 9000)}`,
       // Retain existing image if user already uploaded or provided one
-      image: prev?.image || ''
+      image: prev?.image || '',
+      secondaryImages: prev?.secondaryImages || []
     }));
   };
 
@@ -284,58 +287,150 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setCustomTagInput('');
   };
 
-  // Upload photo from device/camera with canvas optimization
-  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Helper to resize and compress image to high-quality JPEG for Firestore storage
+  const processImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIM = 900;
+          let width = img.width;
+          let height = img.height;
 
-    if (file.size > 8 * 1024 * 1024) {
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
+            resolve(dataUrl);
+          } else {
+            reject(new Error('Canvas context failed'));
+          }
+        };
+        img.onerror = () => reject(new Error('Image failed to load'));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('File reading failed'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Upload multiple photos from device/camera with canvas optimization (up to 5 total)
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !editingProduct) return;
+
+    try {
+      const currentImages = [editingProduct.image, ...(editingProduct.secondaryImages || [])].filter(Boolean);
+      const remainingSlots = Math.max(0, 5 - currentImages.length);
+
+      if (remainingSlots <= 0) {
+        setStatusMessage({
+          type: 'error',
+          text: 'Maximum 5 photos allowed per attire. Please remove a photo before adding a new one.'
+        });
+        return;
+      }
+
+      const fileList = Array.from(files) as File[];
+      const filesToProcess = fileList.slice(0, remainingSlots);
+      const processedDataUrls: string[] = [];
+
+      for (const file of filesToProcess) {
+        if (file.size > 10 * 1024 * 1024) continue;
+        const dataUrl = await processImageFile(file);
+        processedDataUrls.push(dataUrl);
+      }
+
+      if (processedDataUrls.length > 0) {
+        const allNewImages = [...currentImages, ...processedDataUrls];
+        const [primary, ...secondary] = allNewImages;
+        setEditingProduct({
+          ...editingProduct,
+          image: primary || '',
+          secondaryImages: secondary.slice(0, 4)
+        });
+        setStatusMessage({
+          type: 'success',
+          text: `✓ Added ${processedDataUrls.length} photo(s). Total: ${allNewImages.length} of 5 photos loaded!`
+        });
+        setTimeout(() => setStatusMessage(null), 3000);
+      }
+    } catch (err: any) {
+      console.error(err);
       setStatusMessage({
         type: 'error',
-        text: 'Image file is too large. Please upload an image smaller than 8MB.'
+        text: 'Failed to process images. Please try again with valid image files.'
+      });
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleAddImageUrl = () => {
+    if (!imageUrlInput.trim() || !editingProduct) return;
+    const currentImages = [editingProduct.image, ...(editingProduct.secondaryImages || [])].filter(Boolean);
+    if (currentImages.length >= 5) {
+      setStatusMessage({
+        type: 'error',
+        text: 'Maximum 5 photos allowed. Remove a photo first.'
       });
       return;
     }
+    const allImages = [...currentImages, imageUrlInput.trim()];
+    const [primary, ...secondary] = allImages;
+    setEditingProduct({
+      ...editingProduct,
+      image: primary || '',
+      secondaryImages: secondary.slice(0, 4)
+    });
+    setImageUrlInput('');
+    setStatusMessage({
+      type: 'success',
+      text: '✓ Photo URL added to gallery!'
+    });
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Resize to high-quality max 1000px so it fits into Firestore document safely
-        const canvas = document.createElement('canvas');
-        const MAX_DIM = 1000;
-        let width = img.width;
-        let height = img.height;
+  const handleRemovePhoto = (index: number) => {
+    if (!editingProduct) return;
+    const currentImages = [editingProduct.image, ...(editingProduct.secondaryImages || [])].filter(Boolean);
+    const updated = currentImages.filter((_, i) => i !== index);
+    const [primary, ...secondary] = updated;
+    setEditingProduct({
+      ...editingProduct,
+      image: primary || '',
+      secondaryImages: secondary || []
+    });
+  };
 
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height = Math.round((height * MAX_DIM) / width);
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width = Math.round((width * MAX_DIM) / height);
-            height = MAX_DIM;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-          setEditingProduct((prev) => prev ? { ...prev, image: dataUrl } : null);
-          setStatusMessage({
-            type: 'success',
-            text: `✓ Real photo loaded (${width}x${height}px). Ready to save!`
-          });
-          setTimeout(() => setStatusMessage(null), 3000);
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+  const handleSetPrimaryPhoto = (index: number) => {
+    if (!editingProduct || index === 0) return;
+    const currentImages = [editingProduct.image, ...(editingProduct.secondaryImages || [])].filter(Boolean);
+    const selected = currentImages[index];
+    const rest = currentImages.filter((_, i) => i !== index);
+    setEditingProduct({
+      ...editingProduct,
+      image: selected,
+      secondaryImages: rest
+    });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -699,92 +794,197 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* REAL PRODUCT IMAGE UPLOAD SECTION */}
-              <div className="p-5 bg-[#F9F4EC]/60 rounded-2xl border border-[#EAD8C0] space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#2D241E] flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-[#8B0000]" />
-                    <span>Real Product Photography (እውነተኛ የምርት ፎቶ)</span>
-                  </label>
-                  <span className="text-[11px] text-[#8B0000] font-semibold">
-                    Upload from camera or device
-                  </span>
-                </div>
+              {/* REAL PRODUCT IMAGE UPLOAD & GALLERY SECTION (4-5 Photos) */}
+              {(() => {
+                const currentImages = [editingProduct.image, ...(editingProduct.secondaryImages || [])].filter(Boolean);
+                const hasMaxImages = currentImages.length >= 5;
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-                  
-                  {/* Upload Controls */}
-                  <div className="md:col-span-8 space-y-3">
-                    {/* Hidden Native File Input */}
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleImageFileUpload}
-                      className="hidden"
-                    />
-
-                    {/* Direct Upload Box */}
-                    <div 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-6 rounded-2xl border-2 border-dashed border-[#EAD8C0] hover:border-[#8B0000] bg-white cursor-pointer transition-all text-center group"
-                    >
-                      <div className="w-12 h-12 mx-auto rounded-full bg-[#8B0000]/10 text-[#8B0000] group-hover:bg-[#8B0000] group-hover:text-white transition-colors flex items-center justify-center mb-2">
-                        <Upload className="w-5 h-5" />
+                return (
+                  <div className="p-5 bg-[#F9F4EC]/60 rounded-2xl border border-[#EAD8C0] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-[#8B0000]/10 text-[#8B0000]">
+                          <ImageIcon className="w-4 h-4" />
+                        </span>
+                        <div>
+                          <label className="text-xs font-bold text-[#2D241E] block">
+                            Product Photo Gallery (የምርት ፎቶ ማሳያ - እስከ 5 ፎቶዎች)
+                          </label>
+                          <span className="text-[11px] text-stone-500">
+                            Upload 4-5 real photos showing different angles (Front, Back, Embroidery, Netela)
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-xs font-bold text-[#2D241E] group-hover:text-[#8B0000] transition-colors">
-                        Click to select photo from Phone / Computer
-                      </p>
-                      <p className="text-[11px] text-stone-500 mt-1">
-                        Supports JPG, PNG, WEBP. Automatically optimized for fast loading.
-                      </p>
+
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                          currentImages.length >= 4 
+                            ? 'bg-[#2E4739]/10 text-[#2E4739]' 
+                            : currentImages.length > 0 
+                            ? 'bg-[#C5A059]/15 text-[#8c6c2e]' 
+                            : 'bg-stone-200 text-stone-600'
+                        }`}>
+                          {currentImages.length} / 5 Photos
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Or Paste Direct URL */}
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-stone-600">
-                        Or enter direct image URL (የፎቶ ሊንክ):
-                      </label>
-                      <input
-                        type="text"
-                        value={editingProduct.image || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                        placeholder="https://example.com/dress.jpg or data:image/..."
-                        className="w-full text-xs p-2.5 rounded-xl border border-[#EAD8C0] bg-white font-mono text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
-                      />
-                    </div>
-                  </div>
+                    {/* Upload Controls Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                      {/* File Upload Trigger */}
+                      <div className="md:col-span-7">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageFileUpload}
+                          className="hidden"
+                        />
 
-                  {/* Live Photo Preview Card */}
-                  <div className="md:col-span-4 flex flex-col items-center">
-                    <div className="w-full max-w-[200px] aspect-4/5 rounded-2xl overflow-hidden border border-[#EAD8C0] bg-white shadow-md relative">
-                      <img
-                        src={editingProduct.image || DEFAULT_PRODUCT_IMAGE}
-                        alt="Preview"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover object-top"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
-                        }}
-                      />
-                      {editingProduct.image && (
                         <button
                           type="button"
-                          onClick={() => setEditingProduct({ ...editingProduct, image: '' })}
-                          className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
-                          title="Remove Image"
+                          disabled={hasMaxImages}
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`w-full p-4 rounded-xl border-2 border-dashed transition-all flex items-center justify-center gap-3 cursor-pointer ${
+                            hasMaxImages 
+                              ? 'bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed'
+                              : 'bg-white border-[#EAD8C0] hover:border-[#8B0000] text-[#2D241E] hover:text-[#8B0000]'
+                          }`}
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <div className="w-9 h-9 rounded-full bg-[#8B0000]/10 text-[#8B0000] flex items-center justify-center shrink-0">
+                            <Upload className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-bold">
+                              {hasMaxImages ? 'Maximum 5 photos reached' : 'Select photos from Phone / Computer'}
+                            </p>
+                            <p className="text-[10px] text-stone-500">
+                              Select multiple files at once. Auto-optimized for instant fast loading.
+                            </p>
+                          </div>
                         </button>
-                      )}
-                    </div>
-                    <span className="text-[11px] text-stone-500 font-semibold mt-2">
-                      {editingProduct.image ? '✓ Custom Photo Ready' : 'Placeholder Preview'}
-                    </span>
-                  </div>
+                      </div>
 
-                </div>
-              </div>
+                      {/* URL input */}
+                      <div className="md:col-span-5 flex flex-col justify-center">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={imageUrlInput}
+                            disabled={hasMaxImages}
+                            onChange={(e) => setImageUrlInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddImageUrl();
+                              }
+                            }}
+                            placeholder="Or paste photo URL..."
+                            className="flex-1 text-xs p-2.5 rounded-xl border border-[#EAD8C0] bg-white font-mono text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#8B0000]/30"
+                          />
+                          <button
+                            type="button"
+                            disabled={hasMaxImages || !imageUrlInput.trim()}
+                            onClick={handleAddImageUrl}
+                            className="px-3 py-2.5 bg-[#2D241E] hover:bg-[#8B0000] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 shrink-0"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-stone-500 mt-1 pl-1">
+                          You can paste direct image links or data URLs
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Interactive Photos Gallery Grid */}
+                    <div className="pt-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                        {currentImages.map((imgUrl, index) => {
+                          const isPrimary = index === 0;
+
+                          return (
+                            <div 
+                              key={index} 
+                              className={`group relative rounded-2xl overflow-hidden aspect-4/5 bg-white border-2 shadow-xs transition-all ${
+                                isPrimary 
+                                  ? 'border-[#8B0000] ring-2 ring-[#8B0000]/20' 
+                                  : 'border-[#EAD8C0] hover:border-[#8B0000]'
+                              }`}
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Angle ${index + 1}`}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover object-top"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                                }}
+                              />
+
+                              {/* Angle / Primary Badge */}
+                              <div className="absolute top-2 left-2 pointer-events-none">
+                                {isPrimary ? (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#8B0000] text-white shadow-xs">
+                                    ★ Cover Photo
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#2D241E]/80 text-white backdrop-blur-xs">
+                                    Angle {index + 1}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Hover / Actions Overlay */}
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                                <div className="flex justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemovePhoto(index)}
+                                    className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors cursor-pointer shadow-sm"
+                                    title="Delete this photo"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+
+                                {!isPrimary && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetPrimaryPhoto(index)}
+                                    className="w-full py-1.5 px-2 bg-white hover:bg-[#8B0000] text-[#2D241E] hover:text-white rounded-lg text-[10px] font-bold transition-colors shadow-xs"
+                                  >
+                                    Set as Cover
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Empty upload slot if less than 5 */}
+                        {!hasMaxImages && (
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="aspect-4/5 rounded-2xl border-2 border-dashed border-[#EAD8C0] hover:border-[#8B0000] bg-white/70 hover:bg-white flex flex-col items-center justify-center p-3 text-center cursor-pointer transition-colors group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-[#8B0000]/10 text-[#8B0000] flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                              <Plus className="w-4 h-4" />
+                            </div>
+                            <span className="text-[11px] font-bold text-[#2D241E] group-hover:text-[#8B0000]">
+                              + Add Photo
+                            </span>
+                            <span className="text-[9px] text-stone-400 mt-0.5">
+                              Angle {currentImages.length + 1}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Category Group, Tailoring Days & Badge */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
