@@ -17,19 +17,21 @@ import { Footer } from './components/Footer';
 
 function parseInitialView(): ViewType {
   if (typeof window !== 'undefined') {
-    const path = window.location.pathname.toLowerCase();
+    const rawPath = window.location.pathname.toLowerCase();
+    const path = rawPath.replace(/\/+/g, '/');
     const hash = window.location.hash.toLowerCase();
     const search = window.location.search.toLowerCase();
-    if (path.includes('/admin') || hash.includes('admin') || search.includes('admin')) {
+    
+    if (path.includes('admin') || hash.includes('admin') || search.includes('admin')) {
       return 'admin';
     }
-    if (path.includes('/products') || hash.includes('products')) {
+    if (path.includes('product') || hash.includes('product') || search.includes('product')) {
       return 'products';
     }
-    if (path.includes('/about') || hash.includes('about')) {
+    if (path.includes('about') || hash.includes('about') || search.includes('about')) {
       return 'about';
     }
-    if (path.includes('/contact') || hash.includes('contact')) {
+    if (path.includes('contact') || hash.includes('contact') || search.includes('contact')) {
       return 'contact';
     }
   }
